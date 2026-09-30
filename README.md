@@ -1,21 +1,7 @@
-# ห้องเรียนออนไลน์ (ต้นแบบ)
+# ห้องเรียนออนไลน์ (Firebase + GitHub Pages)
 
-เว็บห้องเรียนออนไลน์ไฟล์เดียว (`index.html`) ไม่ต้องติดตั้งอะไร
-
-> ⚠️ เวอร์ชันนี้เก็บข้อมูลในเบราว์เซอร์ (localStorage/IndexedDB) ของแต่ละเครื่อง ไม่แชร์ข้ามเครื่อง
-> ปุ่ม Gmail เป็นแบบจำลอง ยังไม่ใช่ Google Sign-In จริง และรหัสผ่านยังไม่ถูกเข้ารหัส
-> ใช้สำหรับทดสอบ/ต้นแบบเท่านั้น ถ้าจะใช้กับนักเรียนจริงให้ต่อ backend (เช่น Firebase)
-
-## เปิดผ่าน GitHub Pages
-1. สร้าง repository ใหม่บน GitHub
-2. อัปโหลด `index.html` และ `README.md` ไว้ที่ root
-3. ไปที่ Settings → Pages
-4. Source: "Deploy from a branch" → Branch: `main` / `(root)` → Save
-5. รอ 1–2 นาที แล้วเปิด `https://<ชื่อผู้ใช้>.github.io/<ชื่อ-repo>/`
-
-## ทดสอบบนเครื่อง
-ดับเบิลคลิก `index.html` เปิดในเบราว์เซอร์ได้เลย
-
-## หมายเหตุ
-- Gmail ครูถูกกำหนดในตัวแปร `TE` ใน `index.html` (โค้ดฝั่งเบราว์เซอร์ใครก็เปิดดูได้ จึงต้องย้ายไปตรวจฝั่งเซิร์ฟเวอร์เมื่อทำระบบจริง)
-- ล้างข้อมูลทดสอบ: เปิด DevTools → Application → Clear site data
+- หน้าเว็บ: `index.html` (โฮสต์บน GitHub Pages)
+- Backend: Firebase Authentication (Email/Password + Google) และ Firestore (แพ็กเกจ Spark ฟรี)
+- คลิป: วางลิงก์ YouTube (Unlisted) ต่อบทเรียน / เอกสาร: ลิงก์ Google Drive
+- รูปปก/โปรโมท: ย่อแล้วเก็บใน Firestore (ปกละ 1 + ภาพรายละเอียดไม่เกิน 4, ภาพโปรโมทไม่เกิน 4)
+- ห้ามอัปโหลดไฟล์ service account key (`key.json`) ขึ้น repo นี้
