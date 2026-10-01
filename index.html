@@ -101,7 +101,7 @@ async function push(){try{if(!ses)return;const j=[];
 const saveNow=async()=>{clearTimeout(tm);if(await push()){dirty=false;showD();toast('✓ บันทึกข้อมูลลงเว็บแล้ว')}};
 addEventListener('unhandledrejection',e=>alert('เกิดข้อผิดพลาด: '+(e.reason?.message||e.reason?.code||e.reason)));
 
-async function loadContent(c){if(!c)return;try{const u=(await getDoc(doc(doc(db,'courseContent',c.id)))).data()?.u||{};[...c.docs,...c.secs.flatMap(s=>s.ls)].forEach(l=>l.url=u[l.id]||'')}catch(e){}}
+async function loadContent(c){if(!c)return;try{const u=(await getDoc(doc(db,'courseContent',c.id))).data()?.u||{};[...c.docs,...c.secs.flatMap(s=>s.ls)].forEach(l=>l.url=u[l.id]||'')}catch(e){}}
 async function loadAll(u){dirty=false;showD();ses=null;st.me=null;st.own=[];st.cart=[];st.prog={};let adm=false;
  if(u){try{await getDoc(doc(db,'adminCheck','x'));adm=true}catch{}
   if(adm)ses={t:1,id:u.uid};else{const d=await getDoc(doc(db,'users',u.uid));if(d.exists()){const {own,cart,prog,...m}=d.data();st.me=m;st.own=own||[];st.cart=cart||[];st.prog=prog||{};ses={id:u.uid}}}}
@@ -245,7 +245,7 @@ function vProfile(){
 function vMy(){
   if(!ses)return A.need();
   const cs=(isT()?st.courses:own().map(C)).filter(Boolean);
-  return `<div class="wrap"><h2>คอร์สเรียนของฉัน</h2><div class="grid">${cs.map(c=>{const p=prog(c);return `<a class="card" href="#/learn/${c.id}"><div class="cv" ${ph(c.cover)}></div><h3>${esc(c.title)}</h3><div style="margin:0 12px 12px"><div class="bar"><i style="width:${p.p}\%"></i></div><small>เรียนแล้ว ${p.p}% · ${hh(p.h)} /${hh(p.H)} ชม.</small></div></a>`}).join('')||'<p>ยังไม่มีคอร์ส — <a href="#/courses" style="color:var(--pri)">เลือกซื้อคอร์ส</a></p>'}</div></div>`
+  return `<div class="wrap"><h2>คอร์สเรียนของฉัน</h2><div class="grid">${cs.map(c=>{const p=prog(c);return `<a class="card" href="#/learn/${c.id}"><div class="cv" ${ph(c.cover)}></div><h3>${esc(c.title)}</h3><div style="margin:0 12px 12px"><div class="bar"><i style="width:${p.p}%"></i></div><small>เรียนแล้ว ${p.p}% · ${hh(p.h)} / ${hh(p.H)} ชม.</small></div></a>`}).join('')||'<p>ยังไม่มีคอร์ส — <a href="#/courses" style="color:var(--pri)">เลือกซื้อคอร์ส</a></p>'}</div></div>`
 }
 
 function vLearn(cid,lid){
