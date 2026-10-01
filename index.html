@@ -50,9 +50,157 @@ details.ac{margin-top:2px}details.ac summary{background:var(--sky);padding:14px;
 .mi{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd);font-size:14px;justify-content:space-between}
 .mi img,.mi .th{width:56px;height:56px;object-fit:cover;border-radius:6px}
 .tag{font-size:12px;background:var(--acc);color:#222;border-radius:5px;padding:2px 7px}
-.pl{position:relative;aspect-ratio:16/9;background:#000;border:6px solid #bbb}.tap{position:absolute;inset:0;z-index:1;cursor:pointer}.pl iframe{width:100%;height:100%;pointer-events:none;display:block}.ctl{display:flex;gap:8px;align-items:center;background:var(--card);padding:8px 10px;border:1px solid var(--bd);flex-wrap:wrap}.ctl input[type=range]{margin:0;flex:1;min-width:60px;padding:0;accent-color:var(--pri)}.ctl span{font-size:13px;white-space:nowrap;color:var(--mut)}
-.cb{width:38px;height:38px;border-radius:50%;border:0;background:var(--bd);color:var(--tx);display:grid;place-items:center;cursor:pointer;flex:none;transition:.15s}.cb:hover{background:var(--acc);color:#222;transform:scale(1.08)}.cb.big{width:44px;height:44px;background:var(--pri);color:#fff}.cb.big:hover{background:var(--pri);color:#fff}.cb svg{width:20px;height:20px}
-.ssel{background:var(--bd);border:0;border-radius:6px;padding:4px 6px;font:inherit;font-size:12px;cursor:pointer;color:var(--tx);outline:none}
+.pl{position:relative;aspect-ratio:16/9;background:#000;border:6px solid #bbb}.tap{position:absolute;inset:0;z-index:1;cursor:pointer}.pl iframe{width:100%;height:100%;pointer-events:none;display:block}.ctl{display:flex;gap:10px;align-items:center;background:var(--card);padding:8px 10px;border:1px solid var(--bd)}.ctl input{margin:0;flex:1;padding:0;accent-color:var(--pri)}.ctl span{font-size:13px;white-space:nowrap;color:var(--mut)}
+.cb{width:42px;height:42px;border-radius:50%;border:0;background:var(--bd);color:var(--tx);display:grid;place-items:center;cursor:pointer;flex:none;transition:.15s}.cb:hover{background:var(--acc);color:#222;transform:scale(1.08)}.cb.big{width:50px;height:50px;background:var(--pri);color:#fff}.cb.big:hover{background:var(--pri);color:#fff}.cb svg{width:22px;height:22px}
 .plw:fullscreen,.plw.fsx{background:#000;display:flex;flex-direction:column;width:100%;height:100%}.plw.fsx{position:fixed;inset:0;z-index:100}.plw:fullscreen .pl,.plw.fsx .pl{flex:1;aspect-ratio:auto;border:0}.plw:fullscreen .ctl,.plw.fsx .ctl{background:#111;color:#fff;border:0}.plw:fullscreen .ctl span,.plw.fsx .ctl span{color:#ddd}
 .pw{position:relative;display:block}.pw input{padding-right:46px}.eye{position:absolute;right:8px;bottom:7px;height:30px;border:0;background:none;font-size:20px;cursor:pointer;padding:0 6px}
-#dbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0
+#dbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:#1b2440;color:#fff;padding:10px 16px;border-radius:30px;display:none;gap:14px;align-items:center;z-index:60;box-shadow:0 8px 24px #0005;white-space:nowrap}.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#2e7d32;color:#fff;padding:10px 20px;border-radius:30px;z-index:70;box-shadow:0 6px 18px #0004}
+</style></head><body>
+<header id="nav"></header><main id="app"></main>
+<footer class="wrap" style="text-align:center;color:var(--mut);font-size:13px">© ห้องเรียนออนไลน์</footer>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged,signInWithEmailAndPassword,EmailAuthProvider,linkWithCredential} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,query,where} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+/* ===== ข้อมูล ===== */
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9),fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+/* ===== Firebase ===== */
+const firebaseConfig={apiKey:"AIzaSy...ใส่คีย์จริงของคุณตรงนี้...",authDomain:"biosonerd-classroom.firebaseapp.com",projectId:"biosonerd-classroom",storageBucket:"biosonerd-classroom.firebasestorage.app",messagingSenderId:"322744850638",appId:"1:322744850638:web:71de9a87e0d3ef09d6d89f"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const mail=id=>`${id}@student.biosonerd.com`;
+const st={courses:[],banners:[],logo:'',intro:{name:'ครูผู้สอน',bio:'',photo:''},own:[],cart:[],prog:{},me:null};
+let ses=null,ready=false,tm,yp,yt,ci=0,ct,pend=0,dirty=false;
+const sv=(d,x='')=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}${x}</svg>`;
+const IC={play:`<svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>`,pause:`<svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>`,
+ back:sv('<path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/>','<text x="12" y="15.5" font-size="8" text-anchor="middle" fill="currentColor" stroke="none">10</text>'),
+ fwd:sv('<path d="M20 12a8 8 0 1 1-3-6.2M20 4v4h-4"/>','<text x="12" y="15.5" font-size="8" text-anchor="middle" fill="currentColor" stroke="none">10</text>'),
+ fs:sv('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>')};
+const furl=async k=>k; 
+const img=(f,w=700,q=.6)=>new Promise((r,rej)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,w/i.width),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',q))};i.onerror=()=>rej(new Error('อ่านไฟล์รูปไม่ได้ ใช้ไฟล์ JPG หรือ PNG'));i.src=URL.createObjectURL(f)});
+const showD=()=>{let b=$('#dbar');if(!b){b=document.createElement('div');b.id='dbar';b.innerHTML='<span>● มีการแก้ไขที่ยังไม่ได้บันทึก</span><button class="btn s" onclick="saveNow()">💾 บันทึก</button>';document.body.appendChild(b)}b.style.display=dirty?'flex':'none'};
+const toast=m=>{const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)};
+const save=()=>{if(ses&&ses.t){dirty=true;showD()}else{clearTimeout(tm);tm=setTimeout(push,500)}};
+addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
+async function push(){try{if(!ses)return;const j=[];
+ if(ses.t){j.push(setDoc(doc(db,'site','main'),{banners:st.banners,logo:st.logo,intro:st.intro}));
+  for(const c of st.courses){const p=JSON.parse(JSON.stringify(c)),u={};[...p.docs,...p.secs.flatMap(s=>s.ls)].forEach(l=>{u[l.id]=l.url||'';delete l.url});j.push(setDoc(doc(db,'courses',c.id),p),setDoc(doc(db,'courseContent',c.id),{u}))}}
+ else j.push(setDoc(doc(db,'users',ses.id),{...st.me,own:st.own,cart:st.cart,prog:st.prog}));
+ await Promise.all(j);return true}catch(e){console.error(e);alert('บันทึกไม่สำเร็จ: '+(e.code||e.message));return false}}
+const saveNow=async()=>{clearTimeout(tm);if(await push()){dirty=false;showD();toast('✓ บันทึกข้อมูลลงเว็บแล้ว')}};
+addEventListener('unhandledrejection',e=>alert('เกิดข้อผิดพลาด: '+(e.reason?.message||e.reason?.code||e.reason)));
+async function loadContent(c){if(!c)return;try{const u=(await getDoc(doc(db,'courseContent',c.id))).data()?.u||{};[...c.docs,...c.secs.flatMap(s=>s.ls)].forEach(l=>l.url=u[l.id]||'')}catch(e){}}
+async function loadAll(u){dirty=false;showD();ses=null;st.me=null;st.own=[];st.cart=[];st.prog={};let adm=false;
+ if(u){try{await getDoc(doc(db,'adminCheck','x'));adm=true}catch{}
+  if(adm)ses={t:1,id:u.uid};else{const d=await getDoc(doc(db,'users',u.uid));if(d.exists()){const {own,cart,prog,...m}=d.data();st.me=m;st.own=own||[];st.cart=cart||[];st.prog=prog||{};ses={id:u.uid}}}}
+ Object.assign(st,{banners:[],logo:'',intro:{name:'ครูผู้สอน',bio:'',photo:''}});
+ const s=await getDoc(doc(db,'site','main'));if(s.exists())Object.assign(st,s.data());
+ const q=adm?collection(db,'courses'):query(collection(db,'courses'),where('pub','==',true));
+ st.courses=(await getDocs(q)).docs.map(d=>({id:d.id,...d.data()}));
+ for(const c of st.courses)if(adm||st.own.includes(c.id))await loadContent(c)}
+onAuthStateChanged(auth,async u=>{try{await loadAll(u)}catch(e){console.error(e)}ready=true;route()});
+function ytId(u){const m=String(u).match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([\w-]{11})/);return m&&m[1]}
+const vp=a=>{if(!yp||!yp.getPlayerState)return;const t=yp.getCurrentTime(),d=yp.getDuration()||0;
+ if(a==='t')yp.getPlayerState()==1?yp.pauseVideo():yp.playVideo();
+ else if(a==='f')yp.seekTo(Math.min(d,t+10),true);
+ else if(a==='b')yp.seekTo(Math.max(0,t-10),true);
+ else if(a==='fs'){const e=$('#plw');if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen).call(document);else if(e.classList.contains('fsx'))e.classList.remove('fsx');else{const r=e.requestFullscreen||e.webkitRequestFullscreen;if(r){try{const q=r.call(e);q&&q.catch&&q.catch(()=>e.classList.add('fsx'))}catch{e.classList.add('fsx')}}else e.classList.add('fsx')}}};
+addEventListener('keydown',e=>{const n=e.target.tagName;if(!$('#yt')||n==='TEXTAREA'||n==='SELECT'||(n==='INPUT'&&e.target.type!=='range')||(n==='BUTTON'&&e.key===' '))return;
+ if(e.key==='ArrowRight'){vp('f');e.preventDefault()}else if(e.key==='ArrowLeft'){vp('b');e.preventDefault()}else if(e.key===' '||e.key==='k'){vp('t');e.preventDefault()}else if(e.key==='f')vp('fs')});
+function initYT(url){const id=ytId(url);if(!id){$('.pl').innerHTML='<div class="doc">ลิงก์วิดีโอไม่ถูกต้อง</div>';return}
+ const go=()=>{yp=new YT.Player('yt',{host:'https://www.youtube-nocookie.com',videoId:id,playerVars:{controls:0,rel:0,iv_load_policy:3,disablekb:1,playsinline:1,fs:0},events:{onStateChange:e=>{const b=$('#pp');if(b)b.innerHTML=e.data==1?IC.pause:IC.play},onReady:()=>{yt=setInterval(()=>{if(!$('#sk')||!yp.getDuration)return;const d=yp.getDuration()||1,t=yp.getCurrentTime();$('#sk').value=t/d*1000;$('#tm').textContent=fmt(t)+' / '+fmt(d)},500)}}})};
+ if(window.YT&&YT.Player)go();else{window.onYouTubeIframeAPIReady=go;const e=document.createElement('script');e.src='https://www.youtube.com/iframe_api';document.head.appendChild(e)}
+ $('#sk').oninput=e=>yp&&yp.seekTo(yp.getDuration()*e.target.value/1000,true)}
+const isT=()=>!!(ses&&ses.t),key=()=>ses?ses.id:null,me=()=>ses&&(ses.t?{name:'ครูผู้สอน',nick:'ครู'}:st.me);
+const own=()=>st.own,cart=()=>st.cart;
+const C=id=>st.courses.find(c=>c.id===id),pubs=()=>st.courses.filter(c=>c.pub);
+const lessons=c=>c.secs.flatMap(s=>s.ls),hh=s=>(s/3600).toFixed(1);
+const prog=c=>{const l=lessons(c),d=st.prog[c.id]||[],n=l.filter(x=>d.includes(x.id));return{p:l.length?Math.round(n.length/l.length*100):0,h:n.reduce((a,x)=>a+x.dur,0),H:l.reduce((a,x)=>a+x.dur,0),d}};
+const ph=(k,b)=>k?`data-bg="${k}"`:'';
+/* ===== Navbar ===== */
+function nav(){const m=me();$('#nav').innerHTML=`<a class="logo" href="#/">${st.logo?`<img data-k="${st.logo}" alt="logo">`:'<b>LOGO</b>'}</a>${isT()?`<label class="up">⬆ โลโก้<input type="file" accept="image/*" hidden onchange="A.logo(this)"></label>`:''}
+<nav><a href="#/courses">คอร์สทั้งหมด</a><a onclick="A.goT()">แนะนำผู้สอน</a><a href="#/cart">🛒 ตะกร้า${cart().length?` (${cart().length})`:''}</a>${m?'<a href="#/my">คอร์สเรียนของฉัน</a>':''}</nav>
+${m?`<details class="me"><summary>👤 ${esc(m.nick||m.name)}</summary><div><a href="#/my">คอร์สเรียนของฉัน</a>${isT()?'<a href="#/teach">⚙ จัดการเว็บ (ครู)</a>':'<a href="#/profile">แก้ไขข้อมูลส่วนตัว</a>'}<a onclick="A.out()" style="cursor:pointer">ออกจากระบบ</a></div></details>`:'<a class="btn s" href="#/login">สมัครสมาชิก / เข้าสู่ระบบ</a>'}`}
+/* ===== Views ===== */
+const card=c=>`<a class="card" href="#/course/${c.id}"><div class="cv" ${ph(c.cover)}></div><h3>${esc(c.title)}</h3><p>${c.price?c.price.toLocaleString()+' ฿':'ฟรี'}</p></a>`;
+function vHome(){const bs=st.banners.length?st.banners.map(k=>`<div class="sl" data-bg="${k}"></div>`):[['ยินดีต้อนรับสู่ห้องเรียนออนไลน์','เรียนได้ทุกที่ ทุกเวลา'],['คอร์สใหม่ อัปเดตล่าสุด','ดูคอร์สแนะนำด้านล่าง'],['สมัครสมาชิกวันนี้','รับรหัสนักเรียนทันที']].map((t,i)=>`<div class="sl g${i}"><div><h1>${t[0]}</h1><p>${t[1]}</p></div></div>`);
+const f=pubs().filter(c=>c.feat),i=st.intro;
+return `<div class="car">${bs.join('')}<button class="ar l" onclick="sl(-1)">‹</button><button class="ar r" onclick="sl(1)">›</button><div class="dots">${bs.map((_,j)=>`<i onclick="sl(0,${j})"></i>`).join('')}</div></div>
+<div class="wrap"><h2 class="t">คอร์สแนะนำ</h2><div class="grid">${f.map(card).join('')||'<p style="text-align:center;color:var(--mut);grid-column:1/-1">ยังไม่มีคอร์สแนะนำ</p>'}</div></div>
+<section id="teacher" class="wrap"><h2 class="t">แนะนำผู้สอน</h2><div class="box tch"><div class="ph" ${ph(i.photo)}></div><div style="flex:1;min-width:220px"><h3>${esc(i.name)}</h3><p class="pre">${esc(i.bio)}</p></div></div></section>`}
+const vAll=()=>`<div class="wrap"><h2 class="t">คอร์สทั้งหมด</h2><div class="grid">${pubs().map(card).join('')||'<p>ยังไม่มีคอร์ส</p>'}</div></div>`;
+function vCourse(id){const c=C(id);if(!c||(!c.pub&&!isT()))return'<div class="wrap">ไม่พบคอร์ส</div>';const ls=lessons(c),has=own().includes(id),inC=cart().includes(id);
+return `<div class="wrap det"><div><div class="cv" id="mainimg" ${ph(c.cover)}></div><div class="thumbs">${[c.cover,...c.imgs].filter(Boolean).map(k=>`<div data-bg="${k}" onclick="A.show('${k}')"></div>`).join('')}</div></div>
+<div><h1 style="margin-top:0">${esc(c.title)}</h1>${c.pub?'':'<span class="tag">ฉบับร่าง (เห็นเฉพาะครู)</span>'}<div class="price">${c.price?c.price.toLocaleString()+' ฿':'ฟรี'}</div>
+<p>📚 ${c.secs.length} หัวข้อ · ${ls.length} คลิป · ${hh(ls.reduce((a,x)=>a+x.dur,0))} ชม.</p><div class="pre">${esc(c.desc)}</div>
+<div class="row" style="justify-content:flex-start;margin-top:20px">${has||isT()?`<a class="btn" href="#/learn/${id}">▶ เข้าเรียน</a>`:`<button class="btn o" onclick="A.cart('${id}')">${inC?'✓ อยู่ในตะกร้าแล้ว':'🛒 ใส่ตะกร้า'}</button><button class="btn" onclick="A.buy('${id}')">สั่งซื้อคอร์ส</button>`}</div></div></div>`}
+function vCart(){if(!ses)return A.need();const cs=cart().map(C).filter(Boolean);return `<div class="wrap narrow" style="max-width:700px"><h2>ตะกร้าของฉัน</h2>${cs.map(c=>`<div class="mi"><div class="th" ${ph(c.cover)} style="background-size:cover"></div><a href="#/course/${c.id}" style="flex:1">${esc(c.title)}<br><b>${c.price} ฿</b></a><button class="btn s" onclick="A.buy('${c.id}')">สั่งซื้อ</button><button class="btn s r" onclick="A.cart('${c.id}')">ลบ</button></div>`).join('')||'<p>ตะกร้าว่าง</p>'}</div>`}
+const vLogin=()=>`<div class="wrap narrow"><div class="box"><h2>เข้าสู่ระบบ</h2><form onsubmit="return A.login(event)"><label>รหัสนักเรียน (5 หลัก)<input name="id" inputmode="numeric" maxlength="5" required></label><label>รหัสผ่าน<span class="pw"><input name="pw" type="password" required><button type="button" class="eye" onclick="A.eye(this)" title="แสดง/ซ่อนรหัสผ่าน">👁</button></span></label><button class="btn" style="width:100%">เข้าสู่ระบบ</button></form>
+<p style="text-align:center;color:var(--mut)">หรือ</p><button class="btn o" style="width:100%" onclick="A.gmail()">เข้าสู่ระบบด้วย Gmail</button><p style="text-align:center">ยังไม่มีบัญชี? <a href="#/register" style="color:var(--pri)"><b>สมัครสมาชิก</b></a></p></div></div>`;
+const vReg=()=>`<div class="wrap narrow"><div class="box"><h2>สมัครสมาชิก</h2><form onsubmit="return A.reg(event)"><label>ชื่อ-นามสกุล<input name="name" required></label><label>ชื่อเล่น<input name="nick" required></label>
+<label>ชั้น<select name="grade">${['ม.1','ม.2','ม.3','ม.4','ม.5','ม.6','อื่นๆ'].map(g=>`<option>${g}</option>`).join('')}</select></label><label>โรงเรียน<input name="school" required></label><label>ตั้งรหัสผ่าน (อย่างน้อย 6 ตัว)<span class="pw"><input name="pw" type="password" minlength="6" required><button type="button" class="eye" onclick="A.eye(this)" title="แสดง/ซ่อนรหัสผ่าน">👁</button></span></label><p style="color:var(--mut);font-size:13px">ระบบจะให้เลือกบัญชี Google เพื่อผูกกับรหัสนักเรียน</p><button class="btn" style="width:100%">สมัครสมาชิก</button></form></div></div>`;
+function vProfile(){if(!ses||isT())return A.need();const u=me();return `<div class="wrap narrow"><div class="box"><h2>แก้ไขข้อมูลส่วนตัว</h2><p>รหัสนักเรียน: <b>${u.sid}</b></p><form onsubmit="return A.prof(event)"><label>ชื่อ-นามสกุล<input name="name" value="${esc(u.name)}" required></label><label>ชื่อเล่น<input name="nick" value="${esc(u.nick)}" required></label><label>ชั้น<input name="grade" value="${esc(u.grade)}"></label><label>โรงเรียน<input name="school" value="${esc(u.school)}"></label><button class="btn">บันทึก</button></form></div></div>`}
+function vMy(){if(!ses)return A.need();const cs=(isT()?st.courses:own().map(C)).filter(Boolean);return `<div class="wrap"><h2>คอร์สเรียนของฉัน</h2><div class="grid">${cs.map(c=>{const p=prog(c);return `<a class="card" href="#/learn/${c.id}"><div class="cv" ${ph(c.cover)}></div><h3>${esc(c.title)}</h3><div style="margin:0 12px 12px"><div class="bar"><i style="width:${p.p}%"></i></div><small>เรียนแล้ว ${p.p}% · ${hh(p.h)} / ${hh(p.H)} ชม.</small></div></a>`}).join('')||'<p>ยังไม่มีคอร์ส — <a href="#/courses" style="color:var(--pri)">เลือกซื้อคอร์ส</a></p>'}</div></div>`}
+function vLearn(cid,lid){if(!ses)return A.need();const c=C(cid);if(!c)return'<div class="wrap">ไม่พบคอร์ส</div>';if(!isT()&&!own().includes(cid))return`<div class="wrap">ยังไม่ได้ซื้อคอร์สนี้ <a href="#/course/${cid}" style="color:var(--pri)">ดูรายละเอียด</a></div>`;
+const all=lessons(c),p=prog(c),l=[...c.docs,...all].find(x=>x.id===lid)||all.find(x=>!p.d.includes(x.id))||all[0];if(!l)return'<div class="wrap">คอร์สนี้ยังไม่มีเนื้อหา</div>';
+window.curL=l;const isD=c.docs.includes(l),i=all.indexOf(l),done=p.d.includes(l.id),a=x=>`<a class="li ${x.id===l.id?'cur':''}" href="#/learn/${cid}/${x.id}">${c.docs.includes(x)?'📄':p.d.includes(x.id)?'✅':'▶'} ${esc(x.title)}</a>`;
+const media=l.type==='video'?`<div class="plw" id="plw"><div class="pl"><div id="yt"></div><div class="tap" onclick="vp('t')"></div></div><div class="ctl"><button class="cb" onclick="vp('b')" title="ย้อนหลัง 10 วินาที (←)">${IC.back}</button><button class="cb big" id="pp" onclick="vp('t')" title="เล่น/หยุด (Space)">${IC.play}</button><button class="cb" onclick="vp('f')" title="ข้ามไปข้างหน้า 10 วินาที (→)">${IC.fwd}</button><input type="range" id="sk" min="0" max="1000" value="0"><span id="tm">0:00</span><button class="cb" onclick="vp('fs')" title="ขยายเต็มจอ (F)">${IC.fs}</button></div></div>`:`<div class="doc">📄 ${esc(l.title)}<a class="btn" href="${esc(l.url)}" target="_blank" rel="noopener">เปิดเอกสาร</a></div>`;
+return `<div class="wrap play"><div><div class="lt">${esc(l.title)}</div>${media}<div class="row">${!isD&&i>0?`<a class="btn o s" href="#/learn/${cid}/${all[i-1].id}">‹ วิดีโอก่อนหน้า</a>`:'<span></span>'}${isD?'':`<button class="btn s ${done?'':'o'}" onclick="A.mark('${cid}','${l.id}')">${done?'✓ เรียนแล้ว (กดเพื่อยกเลิก)':'ทำเครื่องหมายว่าเรียนวิดีโอนี้แล้ว'}</button>`}${!isD&&i<all.length-1?`<a class="btn o s" href="#/learn/${cid}/${all[i+1].id}">วิดีโอถัดไป ›</a>`:'<span></span>'}</div></div>
+<aside><div class="st">${esc(c.title)}</div><div class="box" style="margin:0"><b>เรียนไปแล้ว ${p.p}%</b><div class="bar"><i style="width:${p.p}%"></i></div><small>${hh(p.h)} / ${hh(p.H)} ชม.</small></div>
+<details class="ac" ${c.docs.includes(l)?'open':''}><summary>ดาวน์โหลดเอกสาร</summary>${c.docs.map(a).join('')||'<div class="li">ไม่มีเอกสาร</div>'}</details>
+${c.secs.map(s=>`<details class="ac" ${s.ls.includes(l)?'open':''}><summary>${esc(s.title)}</summary>${s.ls.map(a).join('')||'<div class="li">—</div>'}</details>`).join('')}<a class="btn" style="display:block;margin-top:10px" href="#/my">กลับไปหน้าคอร์ส</a></aside></div>`}
+/* ===== ครู ===== */
+function vTeach(){if(!isT())return A.need();const i=st.intro;return `<div class="wrap"><div class="row"><h2>จัดการเว็บ (ครู)</h2><button class="btn" onclick="saveNow()">💾 บันทึกข้อมูลลงเว็บ</button></div><div class="box"><div class="row"><b>คอร์สทั้งหมด</b><button class="btn" onclick="A.newC()">+ สร้างคอร์สใหม่</button></div>${st.courses.map(c=>`<div class="mi"><span>${esc(c.title)} ${c.pub?'<span class="tag">เผยแพร่</span>':'<span class="tag">ร่าง</span>'}${c.feat?' <span class="tag">แนะนำ</span>':''}</span><span><a class="btn s" href="#/edit/${c.id}">แก้ไข</a> <button class="btn s r" onclick="A.delC('${c.id}')">ลบ</button></span></div>`).join('')||'<p>ยังไม่มีคอร์ส</p>'}</div>
+<div class="box"><b>ภาพโปรโมทหน้าแรก (เลือกได้หลายภาพ)</b><input type="file" accept="image/*" multiple onchange="A.ban(this)"><div class="thumbs">${st.banners.map((k,j)=>`<div data-bg="${k}" onclick="if(confirm('ลบภาพนี้?'))A.rmBan(${j})"></div>`).join('')}</div></div>
+<div class="box"><b>แนะนำผู้สอน</b><label>ชื่อ<input value="${esc(i.name)}" onchange="st.intro.name=this.value;save()"></label><label>ประวัติ/แนะนำตัว<textarea rows="4" onchange="st.intro.bio=this.value;save()">${esc(i.bio)}</textarea></label><label>รูปผู้สอน<input type="file" accept="image/*" onchange="A.tphoto(this)"></label>${i.photo?`<div class="ph" ${ph(i.photo)} style="width:120px;height:120px"></div>`:''}<p><button class="btn" onclick="saveNow()">💾 บันทึกข้อมูลลงเว็บ</button></p></div></div>`}
+const g=(c,s)=>s==='d'?c.docs:c.secs[s].ls;
+function blk(c,s,t){const L=g(c,s),d=s==='d';return `<div class="box"><b>${esc(t)}</b>${!d?` <button class="btn s r" onclick="A.rmS(${s})">ลบหัวข้อ</button>`:''}${L.map((x,j)=>`<div class="mi"><span>${x.type==='video'?'🎬':'📄'} ${esc(x.title)} ${x.dur?`(${Math.round(x.dur/60)} นาที)`:''}</span><button class="btn s r" onclick="A.rmL('${s}',${j})">✕</button></div>`).join('')}
+<div class="row"><input id="t-${s}" placeholder="ชื่อบทเรียน" style="flex:2"><input id="u-${s}" placeholder="${d?'ลิงก์เอกสาร (Google Drive)':'ลิงก์ YouTube (Unlisted)'}" style="flex:3">${d?'':`<input id="d-${s}" type="number" placeholder="นาที" style="flex:1;min-width:70px" class="nmin">`}<button class="btn s" onclick="A.addL('${s}')">+ เพิ่ม</button></div></div>`}
+function vEdit(id){if(!isT())return A.need();const c=C(id);if(!c)return'<div class="wrap">ไม่พบ</div>';window.ec=c;
+return `<div class="wrap"><a href="#/teach" style="color:var(--pri)">← กลับ</a><h2>แก้ไขคอร์ส</h2>
+<div class="box"><b>1) รายละเอียดหน้าขาย</b><label>ชื่อคอร์ส<input value="${esc(c.title)}" onchange="ec.title=this.value;save()"></label><label>ราคา (บาท)<input type="number" value="${c.price}" onchange="ec.price=+this.value;save()"></label><label>รายละเอียดคอร์ส<textarea rows="6" onchange="ec.desc=this.value;save()">${esc(c.desc)}</textarea></label>
+<label>ปกคอร์ส<input type="file" accept="image/*" onchange="A.cover(this)"></label>${c.cover?`<div class="mi"><img data-k="${c.cover}"></div>`:''}
+<label>ภาพรายละเอียด (หลายภาพได้)<input type="file" accept="image/*" multiple onchange="A.imgs(this)"></label><div class="thumbs">${c.imgs.map((k,j)=>`<div data-bg="${k}" onclick="if(confirm('ลบภาพนี้?'))A.rmI(${j})"></div>`).join('')}</div></div>
+<b>2) จัดหัวข้อและใส่ลิงก์คลิป</b>${blk(c,'d','ดาวน์โหลดเอกสาร')}${c.secs.map((s,j)=>blk(c,j,s.title)).join('')}<button class="btn o" onclick="A.addS()">+ เพิ่มหัวข้อใหญ่</button>
+<div class="box"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" style="width:auto;margin:0" ${c.feat?'checked':''} onchange="ec.feat=this.checked;save()"> ตั้งเป็นคอร์สแนะนำ (แสดงหน้าแรก)</label>
+<div class="row" style="justify-content:flex-start"><button class="btn" onclick="saveNow()">💾 บันทึก</button><a class="btn o" href="#/course/${id}">👁 ดูหน้าที่นักเรียนเห็น</a><button class="btn" onclick="ec.pub=!ec.pub;route();saveNow()">${c.pub?'ยกเลิกเผยแพร่':'🚀 เผยแพร่คอร์ส'}</button></div></div></div>`}
+/* ===== Actions ===== */
+const A={need(){location.hash='#/login';return''},
+eye(b){const i=b.previousElementSibling,h=i.type==='password';i.type=h?'text':'password';b.textContent=h?'🙈':'👁'},
+out(){signOut(auth);location.hash='#/'},
+show(k){$('#mainimg').style.backgroundImage=`url("${k}")`},
+goT(){pend=1;if(location.hash===''||location.hash==='#/')route();else location.hash='#/'},
+logo:async i=>{st.logo=await img(i.files[0],300,.9);save();route()},
+cart(id){if(!ses)return A.need();const a=st.cart,j=a.indexOf(id);j>=0?a.splice(j,1):a.push(id);save();route()},
+async buy(id){if(!ses)return A.need();if(!confirm('ยืนยันสั่งซื้อคอร์สนี้? (ระบบจำลอง ยังไม่ต้องชำระเงิน)'))return;st.own.includes(id)||st.own.push(id);st.cart=st.cart.filter(x=>x!==id);await push();await loadContent(C(id));location.hash='#/my'},
+async login(e){e.preventDefault();const f=new FormData(e.target);try{await signInWithEmailAndPassword(auth,mail(f.get('id')),f.get('pw'));location.hash='#/my'}catch{alert('รหัสนักเรียนหรือรหัสผ่านไม่ถูกต้อง')}return false},
+async gmail(){try{const r=await signInWithPopup(auth,new GoogleAuthProvider());await loadAll(r.user);if(!ses){alert('ยังไม่พบบัญชีที่ผูกกับ Gmail นี้ กรุณาสมัครสมาชิกก่อน');await signOut(auth);location.hash='#/register';return}location.hash='#/my';route()}catch(x){alert('เข้าสู่ระบบไม่สำเร็จ: '+(x.code||x.message))}},
+async reg(e){e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const r=await signInWithPopup(auth,new GoogleAuthProvider());
+ if((await getDoc(doc(db,'users',r.user.uid))).exists()){alert('บัญชี Google นี้สมัครไว้แล้ว ใช้ปุ่มเข้าสู่ระบบด้วย Gmail ได้เลย');return false}
+ let id=null;for(let t=0;t<8&&!id;t++){const c=String(10000+Math.floor(Math.random()*90000));try{await linkWithCredential(r.user,EmailAuthProvider.credential(mail(c),f.pw));id=c}catch(x){if(x.code!=='auth/email-already-in-use')throw x}}
+ if(!id)throw{code:'สุ่มรหัสไม่สำเร็จ ลองใหม่'};
+ const {pw,...p}=f;await setDoc(doc(db,'users',r.user.uid),{...p,sid:id,gmail:r.user.email,own:[],cart:[],prog:{}});
+ await loadAll(r.user);alert('สมัครสมาชิกสำเร็จ!\nรหัสนักเรียนของคุณคือ '+id);location.hash='#/my';route()}catch(x){alert('สมัครไม่สำเร็จ: '+(x.code||x.message))}return false},
+prof(e){e.preventDefault();Object.assign(st.me,Object.fromEntries(new FormData(e.target)));save();alert('บันทึกแล้ว');route();return false},
+mark(cid,lid){const a=st.prog[cid]||(st.prog[cid]=[]),j=a.indexOf(lid);j>=0?a.splice(j,1):a.push(lid);save();route()},
+newC(){const c={id:uid(),title:'คอร์สใหม่',price:0,desc:'',cover:'',imgs:[],docs:[],secs:[],pub:false,feat:false};st.courses.push(c);save();location.hash='#/edit/'+c.id},
+delC(id){if(confirm('ลบคอร์สนี้?')){st.courses=st.courses.filter(c=>c.id!==id);deleteDoc(doc(db,'courses',id));deleteDoc(doc(db,'courseContent',id));route()}},
+ban:async i=>{for(const f of i.files)if(st.banners.length<4)st.banners.push(await img(f,1200,.6));save();route()},rmBan(j){st.banners.splice(j,1);save();route()},
+tphoto:async i=>{st.intro.photo=await img(i.files[0],400,.7);save();route()},
+cover:async i=>{ec.cover=await img(i.files[0]);save();route()},
+imgs:async i=>{for(const f of i.files)if(ec.imgs.length<4)ec.imgs.push(await img(f));save();route()},rmI(j){ec.imgs.splice(j,1);save();route()},
+addS(){const t=prompt('ชื่อหัวข้อใหญ่');if(t){ec.secs.push({id:uid(),title:t,ls:[]});save();route()}},
+rmS(j){if(confirm('ลบหัวข้อนี้?')){ec.secs.splice(j,1);save();route()}},
+addL(s){const t=$('#t-'+s).value.trim(),u=$('#u-'+s).value.trim();if(!u)return alert('ใส่ลิงก์ก่อน');g(ec,s).push({id:uid(),title:t||'บทเรียน',url:u,type:s==='d'?'doc':'video',dur:s==='d'?0:(+($('#d-'+s)?.value)||0)*60});save();route()},
+rmL(s,j){g(ec,s).splice(j,1);save();route()}};
+/* ===== Router ===== */
+function sl(d,a){const s=[...document.querySelectorAll('.sl')];if(!s.length)return;ci=a!=null?a:(ci+d+s.length)%s.length;s.forEach((e,i)=>e.classList.toggle('on',i===ci));document.querySelectorAll('.dots i').forEach((e,i)=>e.classList.toggle('on',i===ci));clearInterval(ct);ct=setInterval(()=>sl(1),5000)}
+function route(){clearInterval(ct);clearInterval(yt);if(!ready){$('#app').innerHTML='<div class="wrap">กำลังโหลด...</div>';return}const [,p,a,b]=location.hash.slice(1).split('/');let h;
+if(!p)h=vHome();else if(p==='courses')h=vAll();else if(p==='course')h=vCourse(a);else if(p==='cart')h=vCart();else if(p==='login')h=vLogin();else if(p==='register')h=vReg();else if(p==='profile')h=vProfile();else if(p==='my')h=vMy();else if(p==='learn')h=vLearn(a,b);else if(p==='teach')h=vTeach();else if(p==='edit')h=vEdit(a);else h='<div class="wrap">ไม่พบหน้า</div>';
+nav();$('#app').innerHTML=h;
+document.querySelectorAll('[data-k]').forEach(async e=>{const u=await furl(e.dataset.k);e.tagName==='A'?e.href=u:e.src=u});
+document.querySelectorAll('[data-bg]').forEach(async e=>{const u=await furl(e.dataset.bg);e.style.backgroundImage=`url("${u}")`});
+if($('#yt'))initYT(curL.url);if(!p){ci=0;sl(0,0)}if(pend){pend=0;$('#teacher')?.scrollIntoView()}else if(!p||p!=='learn')scrollTo(0,0)}
+Object.assign(window,{A,sl,route,st,save,saveNow,vp,IC});
+addEventListener('hashchange',route);route();
+</script></body></html>
