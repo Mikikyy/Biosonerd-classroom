@@ -101,7 +101,7 @@ async function push(){try{if(!ses)return;const j=[];
 const saveNow=async()=>{clearTimeout(tm);if(await push()){dirty=false;showD();toast('✓ บันทึกข้อมูลลงเว็บแล้ว')}};
 addEventListener('unhandledrejection',e=>alert('เกิดข้อผิดพลาด: '+(e.reason?.message||e.reason?.code||e.reason)));
 
-async function loadContent(c){if(!c)return;try{const u=(await getDoc(doc(doc(db,'courseContent',c.id)))).data()?.u||{};[...c.docs,...c.secs.flatMap(s=>s.ls)].forEach(l=>l.url=u[l.id]||'')}catch(e){}}
+async function loadContent(c){if(!c)return;try{const u=(await getDoc(doc(db,'courseContent',c.id))).data()?.u||{};[...c.docs,...c.secs.flatMap(s=>s.ls)].forEach(l=>l.url=u[l.id]||'')}catch(e){}}
 async function loadAll(u){dirty=false;showD();ses=null;st.me=null;st.own=[];st.cart=[];st.prog={};let adm=false;
  if(u){try{await getDoc(doc(db,'adminCheck','x'));adm=true}catch{}
   if(adm)ses={t:1,id:u.uid};else{const d=await getDoc(doc(db,'users',u.uid));if(d.exists()){const {own,cart,prog,...m}=d.data();st.me=m;st.own=own||[];st.cart=cart||[];st.prog=prog||{};ses={id:u.uid}}}}
@@ -330,108 +330,86 @@ const A={
   eye(b){const i=b.previousElementSibling,h=i.type==='password';i.type=h?'text':'password';b.textContent=h?'🙈':'👁'},
   out(){signOut(auth);location.hash='#/'},
   show(k){$('#mainimg').style.backgroundImage=`url("${k}")`},
-  goT(){pend=1;if(location.hash===''||location.hash==='#/')route();else location.hash='#/'},
-  logo:async i=>{st.logo=await img(i.files[0],300,.9);save();route()},
-  cart(id){if(!ses)return A.need();const a=st.cart,j=a.indexOf(id);j>=0?a.splice(j,1):a.push(id);save();route()},
-  async buy(id){if(!ses)return A.need();if(!confirm('ยืนยันสั่งซื้อคอร์สนี้? (ระบบจำลอง ยังไม่ต้องชำระเงิน)'))return;st.own.includes(id)||st.own.push(id);st.cart=st.cart.filter(x=>x!==id);await push();await loadContent(C(id));location.hash='#/my'},
-  async login(e){e.preventDefault();const f=new FormData(e.target);try{await signInWithEmailAndPassword(auth,mail(f.get('id')),f.get('pw'));location.hash='#/my'}catch{alert('รหัสนักเรียนหรือรหัสผ่านไม่ถูกต้อง')}return false},
-  async gmail(){try{const r=await signInWithPopup(auth,new GoogleAuthProvider());await loadAll(r.user);if(!ses){alert('ยังไม่พบบัญชีที่ผูกกับ Gmail นี้ กรุณาสมัครสมาชิกก่อน');await signOut(auth);location.hash='#/register';return}location.hash='#/my';route()}catch(x){alert('เข้าสู่ระบบไม่สำเร็จ: '+(x.code||x.message))}},
-  async reg(e){e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const r=await signInWithPopup(auth,new GoogleAuthProvider());
-   if((await getDoc(doc(db,'users',r.user.uid))).exists()){alert('บัญชี Google นี้สมัครไว้แล้ว ใช้ปุ่มเข้าสู่ระบบด้วย Gmail ได้เลย');return false}
-   let id=null;for(let t=0;t<8&&!id;t++){const c=String(10000+Math.floor(Math.random()*90000));try{await linkWithCredential(r.user,EmailAuthProvider.credential(mail(c),f.pw));id=c}catch(x){if(x.code!=='auth/email-already-in-use')throw x}}
-   if(!id)throw{code:'สุ่มรหัสไม่สำเร็จ ลองใหม่'};
-   const {pw,...p}=f;await setDoc(doc(db,'users',r.user.uid),{...p,sid:id,gmail:r.user.email,own:[],cart:[],prog:{}});
-   await loadAll(r.user);alert('สมัครสมาชิกสำเร็จ!\nรหัสนักเรียนของคุณคือ '+id);location.hash='#/my';route()}catch(x){alert('สมัครไม่สำเร็จ: '+(x.code||x.message))}return false},
-  prof(e){e.preventDefault();Object.assign(st.me,Object.fromEntries(new FormData(e.target)));save();alert('บันทึกแล้ว');route();return false},
-  mark(cid,lid){const a=st.prog[cid]||(st.prog[cid]=[]),j=a.indexOf(lid);j>=0?a.splice(j,1):a.push(lid);save();route()},
-  newC(){const c={id:uid(),title:'คอร์สใหม่',price:0,desc:'',cover:'',imgs:[],docs:[],secs:[],pub:false,feat:false};st.courses.push(c);save();location.hash='#/edit/'+c.id},
-  delC(id){if(confirm('ลบคอร์สนี้?')){st.courses=st.courses.filter(x=>x.id!==id);deleteDoc(doc(db,'courses',id));save();route()}},
-  ban:async i=>{for(const f of i.files)st.banners.push(await img(f,1200,.7));save();route()},
-  rmBan(j){st.banners.splice(j,1);save();route()},
-  tphoto:async i=>{st.intro.photo=await img(i.files[0],400,.8);save();route()},
-  cover:async i=>{ec.cover=await img(i.files[0],800,.7);save();route()},
-  imgs:async i=>{for(const f of i.files)ec.imgs.push(await img(f,800,.7));save();route()},
-  rmI(j){ec.imgs.splice(j,1);save();route()},
-  addS(){const t=prompt('ชื่อหัวข้อใหญ่');if(t){ec.secs.push({title:t,ls:[]});save();route()}},
-  rmS(j){if(confirm('ลบหัวข้อนี้?')){ec.secs.splice(j,1);save();route()}},
-  addL(s){
-    const t=$('#t-'+s).value.trim(),u=$('#u-'+s).value.trim(),d=+$('#d-'+s)?.value||0;
-    if(!t||!u)return alert('กรอกชื่อและลิงก์ให้ครบ');
-    g(ec,s).push({id:uid(),type:s==='d'?'doc':'video',title:t,url:u,dur:d*60});
-    save();route()
-  },
-  rmL(s,j){g(ec,s).splice(j,1);save();route()}
+  goT(){location.hash='#/';setTimeout(()=>$('#teacher')?.scrollIntoView({behavior:'smooth'}),300)},
+  async logo(i){if(i.files[0]){st.logo=await img(i.files[0],300,.7);nav();saveNow()}},
+  async ban(i){for(const f of i.files)st.banners.push(await img(f,1000,.6));route();saveNow()},
+  rmBan(j){st.banners.splice(j,1);route();saveNow()},
+  async tphoto(i){if(i.files[0]){st.intro.photo=await img(i.files[0],400,.6);route();saveNow()}},
+  cart(id){const c=cart(),i=c.indexOf(id);if(i>=0)c.splice(i,1);else c.push(id);nav();route();save()},
+  buy(id){if(!ses)return A.need();if(!own().includes(id))own().push(id);const c=cart(),i=c.indexOf(id);if(i>=0)c.splice(i,1);toast('✓ เพิ่มคอร์สสำเร็จ!');save();location.hash=`#/learn/${id}`},
+  mark(cid,lid){const d=prog(C(cid)).d,i=d.indexOf(lid);if(i>=0)d.splice(i,1);else d.push(lid);st.prog[cid]=d;route();save()},
+  async login(e){e.preventDefault();const f=e.target,id=f.id.value.trim(),pw=f.pw.value;try{await signInWithEmailAndPassword(auth,mail(id),pw);location.hash='#/'}catch(err){alert('รหัสนักเรียนหรือรหัสผ่านไม่ถูกต้อง')}},
+  async gmail(){try{const p=new GoogleAuthProvider();await signInWithPopup(auth,p);location.hash='#/'}catch(e){alert(e.message)}},
+  async reg(e){e.preventDefault();const f=e.target,pw=f.pw.value;let sid;while(true){sid=String(Math.floor(10000+Math.random()*90000));const d=await getDoc(doc(db,'users',sid));if(!d.exists())break}try{const p=new GoogleAuthProvider(),res=await signInWithPopup(auth,p),u=res.user,cred=EmailAuthProvider.credential(mail(sid),pw);await linkWithCredential(u,cred);const data={sid,name:f.name.value,nick:f.nick.value,grade:f.grade.value,school:f.school.value,own:[],cart:[],prog:{}};await setDoc(doc(db,'users',u.uid),data);alert(`สมัครสมาชิกสำเร็จ! รหัสนักเรียนของคุณคือ: ${sid}\nกรุณาจำรหัสนี้เพื่อใช้เข้าสู่ระบบ`);location.hash='#/'}catch(err){alert('เกิดข้อผิดพลาดในการสมัคร: '+(err.message||err))}},
+  async prof(e){e.preventDefault();const f=e.target;Object.assign(st.me,{name:f.name.value,nick:f.nick.value,grade:f.grade.value,school:f.school.value});saveNow();nav();toast('✓ บันทึกข้อมูลแล้ว')},
+  async newC(){const id=uid();st.courses.push({id,title:'คอร์สใหม่',price:0,desc:'',cover:'',imgs:[],pub:false,feat:false,docs:[],secs:[]});saveNow();location.hash=`#/edit/${id}`},
+  async delC(id){if(confirm('ยืนยันลบคอร์สนี้?')){st.courses=st.courses.filter(c=>c.id!==id);await deleteDoc(doc(db,'courses',id));await deleteDoc(doc(db,'courseContent',id));saveNow();route()}},
+  async cover(i){if(i.files[0]){ec.cover=await img(i.files[0]);route();save()}},
+  async imgs(i){for(const f of i.files)ec.imgs.push(await img(f));route();save()},
+  rmI(j){ec.imgs.splice(j,1);route();save()},
+  addS(){const t=prompt('ชื่อหัวข้อใหญ่:');if(t){ec.secs.push({title:t,ls:[]});route();save()}},
+  rmS(j){if(confirm('ลบหัวข้อนี้?')){ec.secs.splice(j,1);route();save()}},
+  addL(s){const t=$(`#t-${s}`).value.trim(),u=$(`#u-${s}`).value.trim(),dur=+($(`#d-${s}`)?.value||0)*60;if(!t||!u)return alert('กรุณากรอกข้อมูลให้ครบ');const l={id:uid(),title:t,url:u,type:s==='d'?'doc':'video',dur};g(ec,s).push(l);route();save()},
+  rmL(s,j){g(ec,s).splice(j,1);route();save()}
 };
 window.A=A;
 
-/* ===== Router & Image Renderer ===== */
-function renderImgs(){
-  document.querySelectorAll('[data-bg]').forEach(async e=>{
-    const k=e.dataset.bg;if(!k)return;
-    e.style.backgroundImage=`url("${await furl(k)}")`
-  });
-  document.querySelectorAll('img[data-k]').forEach(async e=>{
-    const k=e.dataset.k;if(!k)return;
-    e.src=await furl(k)
-  })
+/* ===== Carousel Sliders ===== */
+window.sl=(dir,to)=>{
+  const slides=document.querySelectorAll('.sl'),dots=document.querySelectorAll('.dots i');
+  if(!slides.length)return;
+  slides[ci]?.classList.remove('on');
+  dots[ci]?.classList.remove('on');
+  if(to!==undefined)ci=to;
+  else ci=(ci+dir+slides.length)%slides.length;
+  slides[ci]?.classList.add('on');
+  dots[ci]?.classList.add('on');
+};
+
+function initCar(){
+  ci=0;
+  sl(0,0);
+  clearInterval(ct);
+  ct=setInterval(()=>sl(1),4000);
 }
 
+/* ===== Lazy Load Images ===== */
+function loadImgs(){
+  document.querySelectorAll('[data-bg]').forEach(el=>{
+    const k=el.getAttribute('data-bg');
+    if(k)furl(k).then(u=>{el.style.backgroundImage=`url("${u}")`});
+  });
+  document.querySelectorAll('img[data-k]').forEach(el=>{
+    const k=el.getAttribute('data-k');
+    if(k)furl(k).then(u=>{el.src=u});
+  });
+}
+
+/* ===== Router ===== */
 function route(){
   if(!ready)return;
   clearInterval(yt);
-  if(yp && yp.destroy) try{ yp.destroy(); }catch{}
-  yp=null;
-
   nav();
-  const h=location.hash||'#/',[_,p,a,b]=h.split('/');
-  let html='';
-
-  if(p==='courses')html=vAll();
-  else if(p==='course')html=vCourse(a);
-  else if(p==='cart')html=vCart();
-  else if(p==='login')html=vLogin();
-  else if(p==='register')html=vReg();
-  else if(p==='profile')html=vProfile();
-  else if(p==='my')html=vMy();
-  else if(p==='learn')html=vLearn(a,b);
-  else if(p==='teach')html=vTeach();
-  else if(p==='edit')html=vEdit(a);
-  else html=vHome();
-
-  $('#app').innerHTML=html;
-  renderImgs();
-
-  if(window.curL && window.curL.type==='video') initYT(window.curL.url);
-  delete window.curL;
-
-  if(pend){
-    pend=0;
-    setTimeout(()=>$('#teacher')?.scrollIntoView({behavior:'smooth'}),200)
-  }else window.scrollTo(0,0)
+  const [p,a,b]=location.hash.slice(2).split('/');
+  let h='';
+  if(!p)h=vHome();
+  else if(p==='courses')h=vAll();
+  else if(p==='course')h=vCourse(a);
+  else if(p==='cart')h=vCart();
+  else if(p==='login')h=vLogin();
+  else if(p==='register')h=vReg();
+  else if(p==='profile')h=vProfile();
+  else if(p==='my')h=vMy();
+  else if(p==='learn')h=vLearn(a,b);
+  else if(p==='teach')h=vTeach();
+  else if(p==='edit')h=vEdit(a);
+  else h=vHome();
+  
+  $('#app').innerHTML=h;
+  loadImgs();
+  if(!p)initCar();
+  if(p==='learn'&&window.curL?.type==='video')initYT(window.curL.url);
 }
 
 addEventListener('hashchange',route);
-
-/* ===== Carousel ===== */
-let carIdx = 0;
-window.sl=(dir, jumpTo=null)=>{
-  const slides = document.querySelectorAll('.car .sl');
-  const dots = document.querySelectorAll('.dots i');
-  if(!slides.length) return;
-
-  slides[carIdx].classList.remove('on');
-  if(dots[carIdx]) dots[carIdx].classList.remove('on');
-
-  if(jumpTo !== null) carIdx = jumpTo;
-  else {
-    carIdx += dir;
-    if(carIdx >= slides.length) carIdx = 0;
-    if(carIdx < 0) carIdx = slides.length - 1;
-  }
-
-  slides[carIdx].classList.add('on');
-  if(dots[carIdx]) dots[carIdx].classList.add('on');
-};
-
-setInterval(()=>sl(1), 5000);
 </script></body></html>
