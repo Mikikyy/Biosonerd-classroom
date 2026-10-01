@@ -66,9 +66,9 @@ import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,query,where}
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,9),fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 /* ===== Firebase ===== */
-const firebaseConfig={apiKey:"AIzaSyD2JFWyUfXjmLrEiT6MqYDbc2D1VoQfmtY",authDomain:"biosonerd-classroom.firebaseapp.com",projectId:"biosonerd-classroom",storageBucket:"biosonerd-classroom.firebasestorage.app",messagingSenderId:"322744850638",appId:"1:322744850638:web:71de9a87e0d3ef09d6d89f"};
+const firebaseConfig={apiKey:"AIzaSy...ใส่คีย์จริงของคุณตรงนี้...",authDomain:"biosonerd-classroom.firebaseapp.com",projectId:"biosonerd-classroom",storageBucket:"biosonerd-classroom.firebasestorage.app",messagingSenderId:"322744850638",appId:"1:322744850638:web:71de9a87e0d3ef09d6d89f"};
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-const mail=id=>`${id}@student.biosonerd.app`;
+const mail=id=>`${id}@student.biosonerd.com`;
 const st={courses:[],banners:[],logo:'',intro:{name:'ครูผู้สอน',bio:'',photo:''},own:[],cart:[],prog:{},me:null};
 let ses=null,ready=false,tm,yp,yt,ci=0,ct,pend=0,dirty=false;
 const sv=(d,x='')=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}${x}</svg>`;
@@ -76,7 +76,7 @@ const IC={play:`<svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11
  back:sv('<path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/>','<text x="12" y="15.5" font-size="8" text-anchor="middle" fill="currentColor" stroke="none">10</text>'),
  fwd:sv('<path d="M20 12a8 8 0 1 1-3-6.2M20 4v4h-4"/>','<text x="12" y="15.5" font-size="8" text-anchor="middle" fill="currentColor" stroke="none">10</text>'),
  fs:sv('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>')};
-const furl=async k=>k; // รูปเก็บเป็น dataURL ใน Firestore
+const furl=async k=>k; 
 const img=(f,w=700,q=.6)=>new Promise((r,rej)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,w/i.width),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',q))};i.onerror=()=>rej(new Error('อ่านไฟล์รูปไม่ได้ ใช้ไฟล์ JPG หรือ PNG'));i.src=URL.createObjectURL(f)});
 const showD=()=>{let b=$('#dbar');if(!b){b=document.createElement('div');b.id='dbar';b.innerHTML='<span>● มีการแก้ไขที่ยังไม่ได้บันทึก</span><button class="btn s" onclick="saveNow()">💾 บันทึก</button>';document.body.appendChild(b)}b.style.display=dirty?'flex':'none'};
 const toast=m=>{const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)};
@@ -155,7 +155,7 @@ function vTeach(){if(!isT())return A.need();const i=st.intro;return `<div class=
 <div class="box"><b>แนะนำผู้สอน</b><label>ชื่อ<input value="${esc(i.name)}" onchange="st.intro.name=this.value;save()"></label><label>ประวัติ/แนะนำตัว<textarea rows="4" onchange="st.intro.bio=this.value;save()">${esc(i.bio)}</textarea></label><label>รูปผู้สอน<input type="file" accept="image/*" onchange="A.tphoto(this)"></label>${i.photo?`<div class="ph" ${ph(i.photo)} style="width:120px;height:120px"></div>`:''}<p><button class="btn" onclick="saveNow()">💾 บันทึกข้อมูลลงเว็บ</button></p></div></div>`}
 const g=(c,s)=>s==='d'?c.docs:c.secs[s].ls;
 function blk(c,s,t){const L=g(c,s),d=s==='d';return `<div class="box"><b>${esc(t)}</b>${!d?` <button class="btn s r" onclick="A.rmS(${s})">ลบหัวข้อ</button>`:''}${L.map((x,j)=>`<div class="mi"><span>${x.type==='video'?'🎬':'📄'} ${esc(x.title)} ${x.dur?`(${Math.round(x.dur/60)} นาที)`:''}</span><button class="btn s r" onclick="A.rmL('${s}',${j})">✕</button></div>`).join('')}
-<div class="row"><input id="t-${s}" placeholder="ชื่อบทเรียน" style="flex:2"><input id="u-${s}" placeholder="${d?'ลิงก์เอกสาร (Google Drive)':'ลิงก์ YouTube (Unlisted)'}" style="flex:3">${d?'':`<input id="d-${s}" type="number" placeholder="นาที" style="flex:1;min-width:70px">`}<button class="btn s" onclick="A.addL('${s}')">+ เพิ่ม</button></div></div>`}
+<div class="row"><input id="t-${s}" placeholder="ชื่อบทเรียน" style="flex:2"><input id="u-${s}" placeholder="${d?'ลิงก์เอกสาร (Google Drive)':'ลิงก์ YouTube (Unlisted)'}" style="flex:3">${d?'':`<input id="d-${s}" type="number" placeholder="นาที" style="flex:1;min-width:70px" class="nmin">`}<button class="btn s" onclick="A.addL('${s}')">+ เพิ่ม</button></div></div>`}
 function vEdit(id){if(!isT())return A.need();const c=C(id);if(!c)return'<div class="wrap">ไม่พบ</div>';window.ec=c;
 return `<div class="wrap"><a href="#/teach" style="color:var(--pri)">← กลับ</a><h2>แก้ไขคอร์ส</h2>
 <div class="box"><b>1) รายละเอียดหน้าขาย</b><label>ชื่อคอร์ส<input value="${esc(c.title)}" onchange="ec.title=this.value;save()"></label><label>ราคา (บาท)<input type="number" value="${c.price}" onchange="ec.price=+this.value;save()"></label><label>รายละเอียดคอร์ส<textarea rows="6" onchange="ec.desc=this.value;save()">${esc(c.desc)}</textarea></label>
